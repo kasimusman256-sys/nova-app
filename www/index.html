@@ -223,7 +223,7 @@ dialog::backdrop{background:var(--scrim)}
         <textarea id="input" rows="1" placeholder="Message Nova" aria-label="Message"></textarea>
         <div class="bar">
           <button class="icon-btn" id="attachBtn" aria-label="Attach a file"><svg viewBox="0 0 24 24"><path d="M21 11.500l-8.600 8.600a5.500 5.500 0 0 1-7.800-7.800l8.600-8.600a3.700 3.700 0 0 1 5.200 5.200l-8.600 8.600a1.800 1.800 0 0 1-2.600-2.600l7.900-7.900"/></svg></button>
-          <input type="file" id="fileInput" hidden accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/plain,text/markdown,text/csv">
+          <input type="file" id="fileInput" hidden accept="image/png,image/jpeg,image/webp,image/gif,text/plain,text/markdown,text/csv">
           <button class="send" id="sendBtn" aria-label="Send" disabled><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
         </div>
       </div>
@@ -254,6 +254,12 @@ dialog::backdrop{background:var(--scrim)}
   </label>
   <button class="btn primary" id="saveSettings">Save changes</button>
   <p class="msg-note" id="setNote" role="status"></p>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <label class="field"><span>Change password</span><input id="setPass" type="password" autocomplete="new-password" minlength="6" placeholder="New password (6+ characters)"></label>
+  <button class="btn" id="savePass">Update password</button>
+  <p class="msg-note" id="passNote" role="status"></p>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <button class="btn" id="delAcct" style="color:var(--danger);border-color:var(--danger)">Delete my account</button>
 </div></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -492,7 +498,7 @@ async function openConv(id){
 }
 
 /* ---- Attachments ---- */
-const ALLOWED = ["image/png","image/jpeg","image/webp","image/gif","application/pdf","text/plain","text/markdown","text/csv"];
+const ALLOWED = ["image/png","image/jpeg","image/webp","image/gif","text/plain","text/markdown","text/csv"];
 $("#attachBtn").onclick = () => $("#fileInput").click();
 $("#fileInput").addEventListener("change", async (e) => {
   const f = e.target.files[0]; e.target.value = ""; if (!f) return;
@@ -593,7 +599,7 @@ $("#settingsBtn").onclick = () => {
   closeSide();
   $("#setEmail").textContent = state.user ? state.user.email : "";
   $("#setName").value = (state.profile && state.profile.display_name) || "";
-  $("#setTheme").value = store("nova-theme") || "auto"; $("#setNote").textContent = "";
+  $("#setTheme").value = store("nova-theme") || "auto"; $("#setNote").textContent = ""; $("#passNote").textContent = ""; $("#setPass").value = "";
   $("#settingsDlg").showModal();
 };
 $("#saveSettings").onclick = async () => {
@@ -604,6 +610,22 @@ $("#saveSettings").onclick = async () => {
   if (error){ n.className = "msg-note err"; n.textContent = "Could not save your name."; return; }
   state.profile = { display_name: name }; n.className = "msg-note ok"; n.textContent = "Saved.";
   if (!state.activeId && $("#msgs .hero")) showHero();
+};
+$("#savePass").onclick = async () => {
+  const p = $("#setPass").value, n = $("#passNote");
+  if (p.length < 6){ n.className = "msg-note err"; n.textContent = "Use at least 6 characters."; return; }
+  const { error } = await sb.auth.updateUser({ password: p });
+  if (error){ n.className = "msg-note err"; n.textContent = error.message; return; }
+  $("#setPass").value = ""; n.className = "msg-note ok"; n.textContent = "Password updated.";
+};
+$("#delAcct").onclick = async () => {
+  if (!confirm("Delete your account? Your chats, files and remaining credits will be permanently removed.")) return;
+  const t = prompt("Type DELETE to confirm"); if (t !== "DELETE") return;
+  const { error } = await sb.functions.invoke("delete-account", { body: { confirm: "DELETE" } });
+  if (error){ const info = await fnError(error); toast(info.error || "Could not delete the account."); return; }
+  $("#settingsDlg").close();
+  try { await sb.auth.signOut({ scope: "local" }); } catch(e){}
+  state.user = null; showAuth(); toast("Your account was deleted.");
 };
 document.querySelectorAll("[data-close]").forEach((b) => b.onclick = () => b.closest("dialog").close());
 document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (e) => { if (e.target === d) d.close(); }));
