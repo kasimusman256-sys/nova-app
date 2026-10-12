@@ -469,17 +469,88 @@ function greeting(){
   const n = state.profile && state.profile.display_name ? ", " + state.profile.display_name.split(" ")[0] : "";
   return g + n;
 }
+
+
 function showHero(){
-  const box = $("#msgs"); box.textContent = "";
-  const hero = document.createElement("div"); hero.className = "hero";
-  const h = document.createElement("h2"); h.textContent = greeting() + ".";
-  const p = document.createElement("p"); p.textContent = "Ask a question, draft a message, or work through a problem. What are we doing today?";
-  const chips = document.createElement("div"); chips.className = "chips";
-  ["Explain something simply", "Help me write a message", "Plan my day"].forEach((s) => {
-    const c = document.createElement("button"); c.textContent = s; c.onclick = () => { $("#input").value = s + ": "; autosize(); $("#input").focus(); updateSend(); };
+  const box = $("#msgs");
+  box.textContent = "";
+
+  const hero = document.createElement("div");
+  hero.className = "hero";
+
+  const h = document.createElement("h2");
+  h.textContent = "What can I help with?";
+
+  const p = document.createElement("p");
+  p.textContent = "Ask Nova anything, or choose a starting point below.";
+
+  const chips = document.createElement("div");
+  chips.className = "chips";
+  chips.style.display = "grid";
+  chips.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+  chips.style.gap = "12px";
+
+  const cards = [
+    {
+      title: "Explain a topic",
+      description: "Make difficult things easier to understand",
+      prompt: "Explain something simply"
+    },
+    {
+      title: "Help me write",
+      description: "Draft a message, email, or story",
+      prompt: "Help me write a message"
+    },
+    {
+      title: "Brainstorm ideas",
+      description: "Explore creative ideas and possibilities",
+      prompt: "Give me ideas for"
+    },
+    {
+      title: "Plan something",
+      description: "Turn your goal into clear next steps",
+      prompt: "Help me plan"
+    }
+  ];
+
+  cards.forEach((item) => {
+    const c = document.createElement("button");
+    c.className = "prompt-card";
+    c.style.background = "var(--surface)";
+    c.style.color = "var(--ink)";
+    c.style.border = "1px solid var(--line)";
+    c.style.borderRadius = "14px";
+    c.style.padding = "16px";
+    c.style.minHeight = "105px";
+    c.style.textAlign = "left";
+    c.style.display = "flex";
+    c.style.flexDirection = "column";
+    c.style.alignItems = "flex-start";
+    c.style.gap = "8px";
+    c.style.cursor = "pointer";
+
+    const title = document.createElement("strong");
+    title.textContent = item.title;
+
+    const desc = document.createElement("span");
+    desc.textContent = item.description;
+    desc.style.color = "var(--muted)";
+    desc.style.fontSize = "13px";
+
+    c.append(title, desc);
+
+    c.onclick = () => {
+      $("#input").value = item.prompt + ": ";
+      autosize();
+      $("#input").focus();
+      updateSend();
+    };
+
     chips.appendChild(c);
   });
-  hero.append(h, p, chips); box.appendChild(hero);
+
+  hero.append(h, p, chips);
+  box.appendChild(hero);
 }
 
 /* ---- Conversations ---- */
